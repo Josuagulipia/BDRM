@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Petualangan Muatan Lokal</title>
+<style>
+:root{
+  --bg:#0f2419; --bg2:#16331f; --card:#1c3d26; --accent:#f2b84b; --accent2:#5fae5f;
+  --text:#eef6ee; --muted:#a9c4ad; --danger:#e0574f; --good:#4caf6b;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:linear-gradient(180deg,var(--bg),var(--bg2));color:var(--text);
+  font-family:'Segoe UI',Roboto,Arial,sans-serif;}
+header{position:sticky;top:0;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top,0px));
+  background:rgba(15,36,25,.9);backdrop-filter:blur(4px);display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  border-bottom:1px solid #2c4f34;z-index:10}
+header .brand{font-weight:800;color:var(--accent);margin-right:auto;font-size:15px}
+nav button{background:none;border:1px solid #2c4f34;color:var(--text);padding:6px 10px;border-radius:8px;
+  font-size:12px;cursor:pointer}
+nav button.active{background:var(--accent);color:#22300f;border-color:var(--accent);font-weight:700}
+main{max-width:820px;margin:0 auto;padding:18px 14px 60px}
+.screen{display:none;animation:fade .25s ease}
+.screen.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+h1{font-size:26px;margin:6px 0}
+h2{color:var(--accent);font-size:20px}
+.card{background:var(--card);border:1px solid #2c4f34;border-radius:14px;padding:16px;margin:12px 0}
+.btn{background:var(--accent);color:#22300f;border:none;padding:12px 18px;border-radius:10px;font-weight:700;
+  cursor:pointer;font-size:14px;margin:4px 6px 4px 0}
+.btn.secondary{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+input[type=text]{padding:10px;border-radius:8px;border:1px solid #2c4f34;background:#0f2419;color:var(--text);
+  font-size:14px;width:100%;max-width:280px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:520px){.grid2{grid-template-columns:1fr}}
+.wilayah{padding:16px;border-radius:14px;border:2px solid #2c4f34;background:var(--card);cursor:pointer;
+  transition:.15s}
+.wilayah:hover{transform:translateY(-2px);border-color:var(--accent)}
+.wilayah.locked{opacity:.5;cursor:not-allowed}
+.badgechip{display:inline-block;background:#0f2419;border:1px solid var(--accent);color:var(--accent);
+  padding:3px 9px;border-radius:20px;font-size:11px;margin:2px}
+.progress-outer{background:#0f2419;border-radius:20px;height:16px;overflow:hidden;border:1px solid #2c4f34}
+.progress-inner{background:linear-gradient(90deg,var(--accent2),var(--accent));height:100%;transition:.4s}
+.accordion-h{cursor:pointer;background:#16331f;padding:10px 12px;border-radius:8px;font-weight:700;
+  display:flex;justify-content:space-between}
+.accordion-b{padding:10px 4px;font-size:14px;line-height:1.6;color:var(--muted);display:none}
+.accordion-b.open{display:block}
+.tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;margin-right:6px}
+.tag.term{background:#274a30;color:#9fd6a4}
+.tag.fact{background:#3a2f16;color:var(--accent)}
+.tag.note{background:#3a1f1f;color:#f39a94}
+.quiz-opt{display:block;width:100%;text-align:left;background:#16331f;border:1px solid #2c4f34;color:var(--text);
+  padding:10px;border-radius:8px;margin:6px 0;cursor:pointer;font-size:13px}
+.quiz-opt.correct{background:var(--good);color:#082b14;border-color:var(--good)}
+.quiz-opt.wrong{background:var(--danger);color:#2b0b08;border-color:var(--danger)}
+.mem-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:420px}
+.mem-card{aspect-ratio:1/1;background:#16331f;border:1px solid #2c4f34;border-radius:10px;display:flex;
+  align-items:center;justify-content:center;font-size:11px;text-align:center;padding:4px;cursor:pointer}
+.mem-card.flipped{background:var(--accent);color:#22300f}
+.mem-card.matched{background:var(--good);color:#082b14}
+.ws-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;max-width:420px;font-family:monospace;
+  font-weight:700;user-select:none}
+.ws-cell{aspect-ratio:1/1;background:#16331f;display:flex;align-items:center;justify-content:center;
+  border-radius:3px;font-size:13px;cursor:pointer}
+.ws-cell.sel{background:var(--accent);color:#22300f}
+.ws-cell.found{background:var(--good);color:#082b14}
+.life{color:var(--danger);font-size:16px}
+footer.toast{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:var(--card);
+  border:1px solid var(--accent);padding:10px 16px;border-radius:10px;display:none;z-index:50}
+.cert{border:6px double var(--accent);padding:26px;text-align:center;background:#16331f;border-radius:14px}
+</style>
+</head>
+<body>
+<header>
+  <span class="brand">🗺️ Petualangan Muatan Lokal</span>
+  <nav id="nav">
+    <button data-go="home">🏠 Beranda</button>
+    <button data-go="peta">🗺️ Peta</button>
+    <button data-go="dashboard">📊 Progress</button>
+    <button data-go="sertifikat">🎓 Sertifikat</button>
+  </nav>
+</header>
+<main>
+
+<section id="home" class="screen active">
+  <h1>🌿 PETUALANGAN MUATAN LOKAL</h1>
+  <p>Jelajahi Kalimantan: sungai, hutan, gambut, hingga misteri kabut asap. Selesaikan tiap wilayah untuk membuka wilayah berikutnya!</p>
+  <div class="card">
+    <h2>Siapa kamu, Petualang?</h2>
+    <p><input type="text" id="inNama" placeholder="Nama kamu"></p>
+    <p><input type="text" id="inKelas" placeholder="Kelas"></p>
+    <button class="btn" onclick="mulai()">🚀 MULAI PETUALANGAN</button>
+  </div>
+  <p id="welcomeMsg" style="color:var(--accent);font-weight:700"></p>
+</section>
+
+<section id="peta" class="screen">
+  <h1>🗺️ Peta Petualangan</h1>
+  <div class="grid2">
+    <div class="wilayah" onclick="bukaBab(1)">
+      <h2>🌳 WILAYAH 1</h2>
+      <p>Geografi Kalimantan: Topografi, Sungai, Hutan &amp; Gambut</p>
+      <span id="statusBab1" class="badgechip">🔓 TERBUKA</span>
+    </div>
+    <div class="wilayah" id="wilayah2" onclick="bukaBab(2)">
+      <h2>🔥 WILAYAH 2</h2>
+      <p>Kabut Asap &amp; Mitigasi Bencana</p>
+      <span id="statusBab2" class="badgechip">🔒 TERKUNCI</span>
+    </div>
+  </div>
+</section>
+
+<section id="bab" class="screen">
+  <h1 id="babTitle"></h1>
+  <div class="card">
+    <div class="progress-outer"><div class="progress-inner" id="babProgressBar" style="width:0%"></div></div>
+    <p id="babStepLabel" style="color:var(--muted);font-size:13px"></p>
+  </div>
+  <div id="babContent"></div>
+</section>
+
+<section id="dashboard" class="screen">
+  <h1>📊 Dashboard Petualang</h1>
+  <div class="card">
+    <p><b>Nama:</b> <span id="dNama">-</span> &nbsp; <b>Kelas:</b> <span id="dKelas">-</span></p>
+    <p><b>Total Skor:</b> ⭐ <span id="dSkor">0</span></p>
+    <p><b>Progress keseluruhan:</b></p>
+    <div class="progress-outer"><div class="progress-inner" id="overallBar" style="width:0%"></div></div>
+    <p id="dBab1" class="badgechip">BAB 1: belum selesai</p>
+    <p id="dBab2" class="badgechip">BAB 2: belum selesai</p>
+  </div>
+  <button class="btn secondary" onclick="resetProgress()">🔄 RESET PROGRESS</button>
+</section>
+
+<section id="sertifikat" class="screen">
+  <h1>🎓 Sertifikat</h1>
+  <div id="certArea"></div>
+</section>
+
+</main>
+<footer class="toast" id="toast"></footer>
+
+<script>
+// ================= DATA =================
+const materi = {
+  bab1:{
+    judul:"WILAYAH 1: Geografi Kalimantan",
+    submateri:[
+      {t:"1. Topografi & Sungai", isi:"Topografi adalah bentuk permukaan bumi (dataran rendah, dataran tinggi, perbukitan, pegunungan). Kalimantan memiliki topografi beragam dan jauh lebih sedikit gunung api aktif dibanding Jawa. Sungai besar seperti Kapuas, Barito, Mahakam, dan Kahayan berperan sebagai jalur transportasi, sumber air, penunjang ekonomi (perikanan & perdagangan), bagian kehidupan sosial budaya, dan habitat flora-fauna."},
+      {t:"2. Hutan Hujan Tropis & Keanekaragaman Hayati", isi:"Hutan hujan tropis Kalimantan berkontribusi besar pada keanekaragaman hayati. Tumbuhan khas: meranti, ulin (kayu besi), anggrek hutan. Hewan khas: orangutan, bekantan, burung enggang/rangkong, pesut Mahakam. Fungsi hutan bukan hanya penghasil oksigen, tapi juga penyimpan karbon, pengatur tata air, dan pelindung tanah."},
+      {t:"3. Lahan Gambut", isi:"Gambut terbentuk dari sisa tumbuhan yang menumpuk dan membusuk sangat lambat dalam kondisi jenuh air. Saat basah, gambut menyimpan air seperti spons. Saat kering (misalnya akibat kanal), gambut mudah terbakar dan api bisa merambat di bawah permukaan sehingga sulit dipadamkan."}
+    ],
+    game:"memory",
+    memPairs:[["Topografi","Bentuk permukaan bumi"],["Sungai Kapuas","Sungai besar di Kalimantan"],["Meranti","Tumbuhan khas hutan Kalimantan"],["Bekantan","Hewan khas Kalimantan"],["Gambut basah","Menyimpan air seperti spons"],["Gambut kering","Mudah terbakar"]],
+    quiz:[
+      {q:"Topografi adalah istilah yang menggambarkan...",o:["Bentuk permukaan bumi","Jenis tumbuhan","Suhu udara","Jumlah penduduk","Warna tanah"],a:0,e:"Topografi = bentuk permukaan wilayah (dataran rendah, tinggi, perbukitan, pegunungan)."},
+      {q:"Dibanding Pulau Jawa, Kalimantan memiliki...",o:["Lebih banyak gunung api aktif","Jauh lebih sedikit gunung api aktif","Jumlah gunung api yang sama","Tidak ada dataran rendah","Lebih banyak gurun"],a:1,e:"Kalimantan memiliki jauh lebih sedikit gunung api aktif dibanding Jawa."},
+      {q:"Berikut yang BUKAN peran sungai besar di Kalimantan adalah...",o:["Jalur transportasi","Sumber air","Mendukung perikanan","Habitat flora-fauna","Sumber gunung berapi"],a:4,e:"Sungai tidak berkaitan dengan gunung berapi; perannya pada transportasi, air, ekonomi, sosial-budaya, dan habitat."},
+      {q:"Contoh sungai besar di Kalimantan menurut materi adalah...",o:["Sungai Musi","Sungai Kapuas","Sungai Citarum","Sungai Bengawan Solo","Sungai Ciliwung"],a:1,e:"Sungai Kapuas, Barito, Mahakam, dan Kahayan disebutkan dalam materi."},
+      {q:"Keanekaragaman hayati berarti...",o:["Banyaknya jumlah sungai","Keberagaman makhluk hidup","Tingginya suhu udara","Luasnya lahan gambut","Banyaknya penduduk"],a:1,e:"Keanekaragaman hayati = keberagaman tumbuhan, hewan, dan organisme lain."},
+      {q:"Ulin dikenal juga dengan sebutan...",o:["Kayu jati","Kayu besi","Kayu manis","Kayu putih","Kayu cendana"],a:1,e:"Ulin disebut juga kayu besi."},
+      {q:"Hewan khas Kalimantan yang hidup di sungai adalah...",o:["Orangutan","Bekantan","Pesut Mahakam","Enggang","Anggrek hutan"],a:2,e:"Pesut Mahakam adalah mamalia air khas Sungai Mahakam."},
+      {q:"Ungkapan 'paru-paru dunia' pada hutan sebaiknya dipahami bahwa fungsi hutan...",o:["Hanya soal oksigen","Juga soal karbon, air, tanah, dan keanekaragaman hayati","Hanya untuk kayu bangunan","Hanya untuk pariwisata","Tidak penting bagi lingkungan"],a:1,e:"Fungsi hutan lebih luas dari oksigen saja: penyimpan karbon, pengatur air, pelindung tanah, dan keanekaragaman hayati."},
+      {q:"Gambut terbentuk dari...",o:["Batuan vulkanik","Sisa tumbuhan yang membusuk sangat lambat dalam kondisi jenuh air","Pasir sungai","Lumpur laut","Abu vulkanik"],a:1,e:"Gambut terbentuk dari sisa tumbuhan yang menumpuk dan membusuk sangat lambat dalam kondisi basah."},
+      {q:"Seorang warga melihat lahan gambut di desanya mulai mengering karena kanal. Berdasarkan materi, risiko utama yang meningkat adalah...",o:["Banjir besar","Gempa bumi","Kebakaran yang sulit dipadamkan","Tanah longsor","Kekurangan sungai"],a:2,e:"Gambut yang mengering menjadi mudah terbakar dan api dapat merambat di bawah permukaan sehingga sulit dipadamkan."}
+    ]
+  },
+  bab2:{
+    judul:"WILAYAH 2: Kabut Asap & Mitigasi Bencana",
+    submateri:[
+      {t:"1. Penyebab Karhutla", isi:"Faktor alam: musim kemarau panjang dan fenomena El Niño membuat vegetasi & gambut kering sehingga mudah terbakar. Faktor manusia: pembukaan lahan dengan api yang tidak terkendali. Api kecil bisa meluas jika vegetasi kering dan angin mendukung."},
+      {t:"2. Dampak Kabut Asap", isi:"Kesehatan: iritasi mata & saluran pernapasan. Pendidikan: aktivitas luar ruangan dikurangi, kadang belajar dari rumah. Transportasi & ekonomi: jarak pandang berkurang mengganggu penerbangan/perjalanan darat, aktivitas ekonomi terganggu."},
+      {t:"3. Mitigasi & Penanggulangan", isi:"Mitigasi = tindakan mengurangi risiko & dampak bencana sebelum terjadi. Contoh: rewetting/pembasahan gambut lewat canal blocking, pengawasan hotspot via satelit (perlu diverifikasi di lapangan), dan perlindungan diri dari asap dengan respirator N95 (lebih baik dari masker kain biasa)."}
+    ],
+    game:"wordsearch",
+    wsWords:["KARHUTLA","MITIGASI","GAMBUT","HOTSPOT","RESPIRATOR"],
+    quiz:[
+      {q:"Karhutla adalah singkatan dari...",o:["Kabut asap hutan tropis","Kebakaran hutan dan lahan","Kawasan hutan tropis lokal","Konservasi hutan lahan","Kajian hutan tropis Kalimantan"],a:1,e:"Karhutla = kebakaran hutan dan lahan."},
+      {q:"Fenomena iklim yang disebut dapat membuat kondisi lebih kering di beberapa wilayah Indonesia adalah...",o:["La Niña","El Niño","Monsun","Badai tropis","Front dingin"],a:1,e:"El Niño dapat berkontribusi pada kondisi yang lebih kering."},
+      {q:"Faktor manusia yang meningkatkan risiko karhutla menurut materi adalah...",o:["Menjaga lahan tetap basah","Pembukaan lahan dengan api tidak terkendali","Memantau hotspot","Memakai respirator","Melaporkan kebakaran"],a:1,e:"Pembukaan lahan dengan api tidak terkendali adalah faktor manusia penyebab karhutla."},
+      {q:"Dampak kabut asap terhadap kesehatan yang disebutkan adalah...",o:["Patah tulang","Iritasi mata dan saluran pernapasan","Sakit gigi","Gangguan pendengaran","Alergi makanan"],a:1,e:"Asap dapat menyebabkan iritasi mata dan saluran pernapasan."},
+      {q:"Ketika kualitas udara memburuk, sekolah kadang menerapkan...",o:["Libur permanen","Belajar dari rumah sementara","Ujian dipercepat","Menambah jam olahraga luar ruangan","Study tour"],a:1,e:"Pembelajaran dari rumah diterapkan sementara agar siswa & guru mengurangi paparan asap."},
+      {q:"Kabut asap mengganggu transportasi terutama karena...",o:["Jalan menjadi licin","Jarak pandang berkurang","Bahan bakar langka","Jembatan rusak","Suhu terlalu panas"],a:1,e:"Kabut asap mengurangi jarak pandang sehingga mengganggu penerbangan dan perjalanan darat."},
+      {q:"Mitigasi bencana adalah...",o:["Tindakan setelah bencana selesai","Tindakan mengurangi risiko dan dampak sebelum bencana terjadi","Proses evakuasi darurat","Bantuan dana pascabencana","Laporan berita bencana"],a:1,e:"Mitigasi = tindakan mengurangi risiko & dampak SEBELUM bencana terjadi."},
+      {q:"Canal blocking bertujuan untuk...",o:["Mempercepat aliran air keluar","Membantu menahan air agar gambut tetap basah","Membuat jalan baru","Menambah luas kanal","Mengeringkan lahan"],a:1,e:"Canal blocking (sekat kanal) membantu menahan air sehingga gambut tetap basah."},
+      {q:"Mengapa data hotspot dari satelit perlu diverifikasi di lapangan?",o:["Karena satelit sering rusak","Karena hotspot tidak selalu berarti kebakaran besar","Karena satelit tidak akurat sama sekali","Karena data satelit berbayar","Karena hanya berlaku di laut"],a:1,e:"Hotspot adalah indikator awal yang perlu dikombinasikan dengan pemeriksaan lapangan."},
+      {q:"Seorang warga ingin keluar rumah saat kualitas udara buruk akibat asap. Perlindungan yang paling tepat menurut materi adalah...",o:["Masker kain biasa saja","Tidak perlu pelindung apa pun","Respirator seperti N95","Payung","Kacamata hitam"],a:2,e:"Respirator seperti N95 memberikan perlindungan lebih baik terhadap partikel asap dibanding masker kain biasa."}
+    ]
+  }
+};
+
+// ================= STATE =================
+let state = JSON.parse(localStorage.getItem('mulok_state')||'null') || {
+  nama:"", kelas:"", skor:0,
+  bab1:{materi:false,game:false,quiz:false}, bab2:{materi:false,game:false,quiz:false}
+};
+function save(){ localStorage.setItem('mulok_state', JSON.stringify(state)); }
+
+function toast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block';
+  setTimeout(()=>t.style.display='none', 1800);
+}
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active', b.dataset.go===id));
+  if(id==='dashboard') renderDashboard();
+  if(id==='peta') renderPeta();
+  if(id==='sertifikat') renderCert();
+}
+document.getElementById('nav').addEventListener('click', e=>{
+  if(e.target.dataset.go) go(e.target.dataset.go);
+});
+
+function mulai(){
+  const n=document.getElementById('inNama').value.trim();
+  const k=document.getElementById('inKelas').value.trim();
+  if(!n){ toast("Isi namamu dulu, Petualang!"); return; }
+  state.nama=n; state.kelas=k||'-'; save();
+  document.getElementById('welcomeMsg').textContent = `Selamat datang, ${n}! Petualanganmu dimulai sekarang!`;
+  go('peta');
+}
+
+function renderPeta(){
+  const b1done = state.bab1.materi && state.bab1.game && state.bab1.quiz;
+  document.getElementById('statusBab1').textContent = b1done ? "✅ SELESAI" : "🔓 TERBUKA";
+  const w2 = document.getElementById('wilayah2');
+  if(b1done){
+    w2.classList.remove('locked');
+    document.getElementById('statusBab2').textContent = (state.bab2.materi&&state.bab2.game&&state.bab2.quiz) ? "✅ SELESAI" : "🔓 TERBUKA";
+  } else {
+    w2.classList.add('locked');
+    document.getElementById('statusBab2').textContent = "🔒 TERKUNCI";
+  }
+}
+function bukaBab(n){
+  if(n===2 && !(state.bab1.materi&&state.bab1.game&&state.bab1.quiz)){
+    toast("Selesaikan semua misi di Wilayah 1 terlebih dahulu!"); return;
+  }
+  renderBab(n);
+  go('bab');
+}
+
+// ---------- BAB RENDER ----------
+let curBab=1, curStep='materi';
+function renderBab(n){
+  curBab=n; curStep='materi';
+  const d = materi['bab'+n];
+  document.getElementById('babTitle').textContent = (n===1?"🌳 ":"🔥 ")+d.judul;
+  showStep();
+}
+function stepDone(){ const s=state['bab'+curBab]; return {materi:s.materi, game:s.game, quiz:s.quiz}; }
+function updateBabProgress(){
+  const s=state['bab'+curBab];
+  const pct = ((s.materi?1:0)+(s.game?1:0)+(s.quiz?1:0))/3*100;
+  document.getElementById('babProgressBar').style.width=pct+'%';
+  document.getElementById('babStepLabel').textContent =
+    `📖 Materi: ${s.materi?'✅':'⬜'}  🎮 Game: ${s.game?'✅':'⬜'}  🧠 Kuis: ${s.quiz?'✅':'⬜'}`;
+}
+function showStep(){
+  updateBabProgress();
+  const c=document.getElementById('babContent'); c.innerHTML='';
+  if(curStep==='materi') renderMateri(c);
+  else if(curStep==='game') renderGame(c);
+  else if(curStep==='quiz') renderQuiz(c);
+}
+function renderMateri(c){
+  const d = materi['bab'+curBab];
+  d.submateri.forEach((s,i)=>{
+    const h=document.createElement('div'); h.className='accordion-h';
+    h.innerHTML=`<span>📖 ${s.t}</span><span>▾</span>`;
+    const b=document.createElement('div'); b.className='accordion-b';
+    b.innerHTML=`<span class="tag term">💡</span>${s.isi}`;
+    h.onclick=()=>b.classList.toggle('open');
+    c.appendChild(h); c.appendChild(b);
+  });
+  const btn=document.createElement('button'); btn.className='btn'; btn.textContent='✅ Materi selesai, lanjut ke Game →';
+  btn.onclick=()=>{ state['bab'+curBab].materi=true; save(); toast('🎉 Materi selesai!'); curStep='game'; showStep(); };
+  c.appendChild(document.createElement('br')); c.appendChild(btn);
+}
+
+// ---- GAME: memory match / word search ----
+function renderGame(c){
+  const d = materi['bab'+curBab];
+  if(d.game==='memory') renderMemory(c,d); else renderWordSearch(c,d);
+}
+function renderMemory(c,d){
+  c.innerHTML='<h2>🎮 GAME: Memory Match</h2><p>Cocokkan istilah dengan pengertiannya!</p>';
+  let cards=[];
+  d.memPairs.forEach((p,i)=>{ cards.push({id:i,txt:p[0],pair:i}); cards.push({id:i+100,txt:p[1],pair:i}); });
+  cards.sort(()=>Math.random()-0.5);
+  const grid=document.createElement('div'); grid.className='mem-grid';
+  let flipped=[], matched=0, lock=false;
+  cards.forEach(card=>{
+    const el=document.createElement('div'); el.className='mem-card'; el.dataset.pair=card.pair; el.textContent='?';
+    el.onclick=()=>{
+      if(lock||el.classList.contains('matched')||el.classList.contains('flipped'))return;
+      el.classList.add('flipped'); el.textContent=card.txt; flipped.push({el,card});
+      if(flipped.length===2){
+        lock=true;
+        setTimeout(()=>{
+          if(flipped[0].card.pair===flipped[1].card.pair){
+            flipped.forEach(f=>f.el.classList.add('matched'));
+            matched++; state.skor+=10; save(); toast('✨ Cocok! +10 poin');
+            if(matched===d.memPairs.length){
+              state['bab'+curBab].game=true; save(); toast('🎉 Game selesai!');
+              setTimeout(()=>{curStep='quiz'; showStep();},600);
+            }
+          } else {
+            flipped.forEach(f=>{f.el.classList.remove('flipped'); f.el.textContent='?';});
+            toast('❌ Belum cocok, coba lagi');
+          }
+          flipped=[]; lock=false;
+        },700);
+      }
+    };
+    grid.appendChild(el);
+  });
+  c.appendChild(grid);
+}
+function renderWordSearch(c,d){
+  c.innerHTML='<h2>🎮 GAME: Word Search</h2><p>🔎 Cari kata: '+d.wsWords.join(', ')+'</p>';
+  const SIZE=10; let grid2=Array.from({length:SIZE},()=>Array(SIZE).fill(''));
+  const dirs=[[0,1],[1,0],[1,1]];
+  d.wsWords.forEach(w=>{
+    let placed=false, tries=0;
+    while(!placed && tries<200){
+      tries++;
+      const dir=dirs[Math.floor(Math.random()*dirs.length)];
+      const r0=Math.floor(Math.random()*SIZE), c0=Math.floor(Math.random()*SIZE);
+      const r1=r0+dir[0]*(w.length-1), c1=c0+dir[1]*(w.length-1);
+      if(r1>=SIZE||c1>=SIZE) continue;
+      let ok=true;
+      for(let i=0;i<w.length;i++){ const rr=r0+dir[0]*i, cc=c0+dir[1]*i; if(grid2[rr][cc] && grid2[rr][cc]!==w[i]){ok=false;break;} }
+      if(!ok) continue;
+      for(let i=0;i<w.length;i++){ const rr=r0+dir[0]*i, cc=c0+dir[1]*i; grid2[rr][cc]=w[i]; }
+      placed=true;
+    }
+  });
+  const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for(let r=0;r<SIZE;r++)for(let cc=0;cc<SIZE;cc++) if(!grid2[r][cc]) grid2[r][cc]=letters[Math.floor(Math.random()*26)];
+  const wrap=document.createElement('div'); wrap.className='ws-grid';
+  let sel=[], found=0;
+  for(let r=0;r<SIZE;r++)for(let cc=0;cc<SIZE;cc++){
+    const cell=document.createElement('div'); cell.className='ws-cell'; cell.textContent=grid2[r][cc];
+    cell.dataset.r=r; cell.dataset.c=cc;
+    cell.onclick=()=>{
+      cell.classList.toggle('sel');
+      if(cell.classList.contains('sel')) sel.push(cell); else sel=sel.filter(x=>x!==cell);
+      const word = sel.map(x=>x.textContent).join('');
+      const wordRev = sel.map(x=>x.textContent).reverse().join('');
+      const match = d.wsWords.find(w=>w===word||w===wordRev);
+      if(match){
+        sel.forEach(x=>{x.classList.remove('sel');x.classList.add('found');});
+        sel=[]; found++; state.skor+=8; save();
+        toast('✨ Ditemukan: '+match+' +8 poin');
+        if(found===d.wsWords.length){
+          state['bab'+curBab].game=true; save(); toast('🎉 Semua kata ditemukan!');
+          setTimeout(()=>{curStep='quiz'; showStep();},600);
+        }
+      }
+    };
+    wrap.appendChild(cell);
+  }
+  c.appendChild(wrap);
+}
+
+// ---- QUIZ ----
+function renderQuiz(c){
+  const d = materi['bab'+curBab];
+  c.innerHTML = `<h2>🧠 KUIS ${curBab===1?'WILAYAH 1':'WILAYAH 2'}</h2>
+    <p><span class="life">❤️</span><span class="life">❤️</span><span class="life" id="lifespan">❤️</span> &nbsp; Soal <span id="qNum">1</span>/${d.quiz.length}</p>`;
+  const qBox=document.createElement('div'); qBox.id='qBox'; c.appendChild(qBox);
+  let idx=0, lives=3, correctCount=0;
+  const letters=['A','B','C','D','E'];
+  function showQ(){
+    if(idx>=d.quiz.length){
+      qBox.innerHTML = `<div class="card"><h2>🏆 Kuis selesai!</h2><p>Benar: ${correctCount}/${d.quiz.length}</p></div>`;
+      state['bab'+curBab].quiz=true; save();
+      toast('🎉 Kuis Wilayah '+curBab+' selesai!');
+      const nextBtn=document.createElement('button'); nextBtn.className='btn';
+      nextBtn.textContent = (curBab===1)? '🔥 Buka Wilayah 2 di Peta →' : '👑 Lihat Sertifikat →';
+      nextBtn.onclick=()=> go(curBab===1?'peta':'sertifikat');
+      qBox.appendChild(nextBtn);
+      return;
+    }
+    const Q=d.quiz[idx];
+    document.getElementById('qNum').textContent=idx+1;
+    qBox.innerHTML = `<div class="card"><p><b>${Q.q}</b></p></div>`;
+    Q.o.forEach((opt,i)=>{
+      const b=document.createElement('button'); b.className='quiz-opt';
+      b.textContent=letters[i]+'. '+opt;
+      b.onclick=()=>{
+        document.querySelectorAll('.quiz-opt').forEach(x=>x.onclick=null);
+        if(i===Q.a){
+          b.classList.add('correct'); state.skor+=10; correctCount++; save();
+          toast('🎉 BENAR! +10 poin');
+        } else {
+          b.classList.add('wrong');
+          document.querySelectorAll('.quiz-opt')[Q.a].classList.add('correct');
+          lives--; document.getElementById('lifespan')?.remove();
+          toast('❌ BELUM TEPAT');
+        }
+        const exp=document.createElement('div'); exp.className='card';
+        exp.innerHTML = (i===Q.a? '🎉 <b>Jawabanmu tepat!</b> ' : '⭐ <b>Jawaban benar: '+letters[Q.a]+'. '+Q.o[Q.a]+'</b> ')+Q.e;
+        qBox.appendChild(exp);
+        const nb=document.createElement('button'); nb.className='btn'; nb.textContent='Lanjut →';
+        nb.onclick=()=>{ idx++; showQ(); };
+        qBox.appendChild(nb);
+      };
+      qBox.appendChild(b);
+    });
+  }
+  showQ();
+}
+
+// ---------- DASHBOARD ----------
+function renderDashboard(){
+  document.getElementById('dNama').textContent = state.nama||'-';
+  document.getElementById('dKelas').textContent = state.kelas||'-';
+  document.getElementById('dSkor').textContent = state.skor;
+  const b1=state.bab1.materi&&state.bab1.game&&state.bab1.quiz;
+  const b2=state.bab2.materi&&state.bab2.game&&state.bab2.quiz;
+  document.getElementById('dBab1').textContent = 'WILAYAH 1: '+(b1?'✅ selesai':'belum selesai');
+  document.getElementById('dBab2').textContent = 'WILAYAH 2: '+(b2?'✅ selesai':'belum selesai');
+  const pct = ((b1?1:0)+(b2?1:0))/2*100;
+  document.getElementById('overallBar').style.width=pct+'%';
+}
+function resetProgress(){
+  if(confirm('Yakin ingin menghapus semua progress?')){
+    localStorage.removeItem('mulok_state'); location.reload();
+  }
+}
+
+// ---------- SERTIFIKAT ----------
+function renderCert(){
+  const el=document.getElementById('certArea');
+  const b1=state.bab1.materi&&state.bab1.game&&state.bab1.quiz;
+  const b2=state.bab2.materi&&state.bab2.game&&state.bab2.quiz;
+  if(!(b1&&b2)){
+    el.innerHTML = '<div class="card"><p>Selesaikan Wilayah 1 dan Wilayah 2 (materi, game, & kuis) untuk membuka sertifikatmu!</p></div>';
+    return;
+  }
+  const no = 'MULOK-'+(state.nama||'X').slice(0,3).toUpperCase()+'-'+Date.now().toString().slice(-6);
+  el.innerHTML = `
+  <div class="cert">
+    <h2>🎓 SERTIFIKAT PENYELESAIAN</h2>
+    <p>Diberikan kepada</p>
+    <h1 style="color:var(--accent)">${state.nama||'-'}</h1>
+    <p>Kelas: ${state.kelas||'-'}</p>
+    <p>Telah menyelesaikan</p>
+    <h2>PETUALANGAN MUATAN LOKAL</h2>
+    <p>Total Skor: ⭐ ${state.skor}</p>
+    <p>Tanggal: ${new Date().toLocaleDateString('id-ID')}</p>
+    <p>No. Sertifikat: ${no}</p>
+    <p style="margin-top:20px">____________________<br>Guru Pembimbing</p>
+  </div>
+  <button class="btn" onclick="window.print()">🖨️ CETAK SERTIFIKAT</button>`;
+}
+
+// init
+if(state.nama){ document.getElementById('welcomeMsg').textContent = `Selamat datang kembali, ${state.nama}!`; }
+</script>
+</body>
+</html>
